@@ -32,9 +32,9 @@ def get_redis():
     return redis.Redis(connection_pool=redis_pool)
 
 MATCH_QUEUE = "matching_queue"
-INITIAL_BACKOFF = 0.01      # seconds
+INITIAL_BACKOFF = 0.05      # seconds
 MAX_BACKOFF = 5.0          # seconds
-BACKOFF_MULTIPLIER = 1
+BACKOFF_MULTIPLIER = 2
 post_match_executor = ThreadPoolExecutor(max_workers=10)
 
 ws_manager = WebSocketManager()
