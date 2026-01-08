@@ -151,6 +151,7 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
     redis_client = get_redis()
     await ws_manager.connect(name, websocket)
     try:
+        print("Socket Connected")
         while True:
             received_message = await websocket.receive_text()
             
@@ -177,6 +178,7 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
                 print(f"Invalid JSON from {name}: {received_message}")
             
     except WebSocketDisconnect:
+        print("WebSocket disconnected...")
         await ws_manager.disconnect(name)
         redis_client.zrem(MATCH_QUEUE, name)
 
