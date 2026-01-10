@@ -83,17 +83,22 @@ def match_worker():
     redis_client = get_redis()
 
     while True:
+        print("Tring to match")
         queue_size = redis_client.zcard(MATCH_QUEUE)
 
         # Not enough users → backoff
         if queue_size < 2:
+            print("Not enough users")
             time.sleep(backoff)
             backoff = min(backoff * BACKOFF_MULTIPLIER, MAX_BACKOFF)
             continue
         
+        print("Found Enough users")
         users = redis_client.zpopmin(MATCH_QUEUE, 2)
         username1 = users[0][0]
         username2 = users[1][0]
+
+
 
         backoff = INITIAL_BACKOFF
 
@@ -150,7 +155,6 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
     print("Trying to add socket for user - " + name)
     redis_client = get_redis()
 
-    await websocket.accept()
     await ws_manager.connect(name, websocket)
     try:
         print("Socket Connected")
