@@ -33,7 +33,7 @@ def get_redis():
 
 MATCH_QUEUE = "matching_queue"
 INITIAL_BACKOFF = 0.05      # seconds
-MAX_BACKOFF = 5.0          # seconds
+MAX_BACKOFF = 1.0          # seconds
 BACKOFF_MULTIPLIER = 2
 post_match_executor = ThreadPoolExecutor(max_workers=10)
 
@@ -83,9 +83,8 @@ def match_worker():
     redis_client = get_redis()
 
     while True:
-        print("Tring to match")
         queue_size = redis_client.zcard(MATCH_QUEUE)
-
+        print(queue_size)
         # Not enough users → backoff
         if queue_size < 2:
             print("Not enough users")
