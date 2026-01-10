@@ -149,6 +149,8 @@ def start_matcher():
 async def websocket_endpoint(websocket: WebSocket, name: str):
     print("Trying to add socket for user - " + name)
     redis_client = get_redis()
+
+    await websocket.accept()
     await ws_manager.connect(name, websocket)
     try:
         print("Socket Connected")
