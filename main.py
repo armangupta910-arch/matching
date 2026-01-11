@@ -2,7 +2,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from models import User
 import redis, os, json, time, asyncio, uuid
 from threading import Thread
-from concurrent.futures import ThreadPoolExecutor
 from websocket_manager import WebSocketManager
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,12 +34,8 @@ MATCH_QUEUE = "matching_queue"
 INITIAL_BACKOFF = 0.05      # seconds
 MAX_BACKOFF = 1.0          # seconds
 BACKOFF_MULTIPLIER = 2
-post_match_executor = ThreadPoolExecutor(max_workers=10)
 
 ws_manager = WebSocketManager()
-
-def run_async_task(coro):
-    asyncio.run(coro)
 
 def store_room(room_code: str, initiator: str, responder: str):
     key = f"room:{room_code}"
@@ -99,10 +94,11 @@ def match_worker():
 
             backoff = INITIAL_BACKOFF
 
-            post_match_executor.submit(
-                run_async_task,
+            app.state.loop.call_soon_threadsafe(
+                asyncio.create_task,
                 handle_post_match(username1, username2)
             )
+
 
     except Exception as e:
         import traceback
@@ -143,8 +139,10 @@ async def handle_skip(username: str):
 ============= Startup =============
 '''
 @app.on_event("startup")
-def start_matcher():
-    Thread(target=match_worker, daemon=True).start()
+async def startup():
+    app.state.loop = asyncio.get_running_loop()
+    print("Event loop captured for matcher")
+
 
 
 '''
