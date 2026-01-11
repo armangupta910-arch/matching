@@ -82,33 +82,34 @@ def match_worker():
     backoff = INITIAL_BACKOFF
     redis_client = get_redis()
 
-    while True:
-        queue_size = redis_client.zcard(MATCH_QUEUE)
-        print(queue_size)
-        # Not enough users → backoff
-        if queue_size < 2:
-            print("Not enough users")
-            time.sleep(backoff)
-            backoff = min(backoff * BACKOFF_MULTIPLIER, MAX_BACKOFF)
-            continue
-        
-        print("Found Enough users")
-        users = redis_client.zpopmin(MATCH_QUEUE, 2)
-        username1 = users[0][0]
-        username2 = users[1][0]
+    try:
+        while True:
+            queue_size = redis_client.zcard(MATCH_QUEUE)
 
+            if queue_size < 2:
+                time.sleep(backoff)
+                backoff = min(backoff * BACKOFF_MULTIPLIER, MAX_BACKOFF)
+                continue
 
+            users = redis_client.zpopmin(MATCH_QUEUE, 2)
+            if len(users) < 2:
+                continue
 
-        backoff = INITIAL_BACKOFF
+            username1, username2 = users[0][0], users[1][0]
 
-        print("Matched, socket for users :- ")
-        for i in ws_manager.get_all_sockets():
-            print(i)
+            backoff = INITIAL_BACKOFF
 
-        post_match_executor.submit(
-            run_async_task,
-            handle_post_match(username1, username2)
-        )
+            post_match_executor.submit(
+                run_async_task,
+                handle_post_match(username1, username2)
+            )
+
+    except Exception as e:
+        import traceback
+        print("Matching Thread TERMINATED")
+        print("Reason:", repr(e))
+        traceback.print_exc()
+
 
 
 async def handle_skip(username: str):
