@@ -10,11 +10,12 @@ class WebSocketManager:
     async def connect(self, name: str, websocket: WebSocket):
         if name in self.active_connections:
             print("User with duplicate username found. Not allowed to accept websocket")
-            return 
+            return False
         
         await websocket.accept()
         async with self.lock:
             self.active_connections[name] = websocket
+            return True
 
     async def disconnect(self, name: str):
         async with self.lock:

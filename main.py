@@ -73,6 +73,27 @@ async def handle_post_match(username1, username2):
 
     print(f"Matched {username1} <-> {username2}")
 
+def match_worker_supervisor():
+    restart_delay = 1  # seconds
+
+    while True:
+        print("🚀 Starting match worker")
+
+        worker = Thread(
+            target=match_worker,
+            name="MatchWorker",
+            daemon=True
+        )
+
+        worker.start()
+        worker.join()  # waits until match_worker exits
+
+        print("Match worker stopped")
+        print(f"Restarting in {restart_delay}s")
+
+        time.sleep(restart_delay)
+        restart_delay = min(restart_delay * 2, 30)
+
 def match_worker():
     backoff = INITIAL_BACKOFF
     redis_client = get_redis()
@@ -143,6 +164,11 @@ async def startup():
     app.state.loop = asyncio.get_running_loop()
     print("Event loop captured for matcher")
 
+    Thread(
+        target=match_worker_supervisor,
+        name="MatchWorkerSupervisor",
+        daemon=True
+    ).start()
 
 
 '''
@@ -153,7 +179,9 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
     print("Trying to add socket for user - " + name)
     redis_client = get_redis()
 
-    await ws_manager.connect(name, websocket)
+    connected = await ws_manager.connect(name, websocket)
+    if connected == False:
+        return 
     try:
         print("Socket Connected")
         while True:
